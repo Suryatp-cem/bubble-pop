@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Virtual Bubble Wrap Popper</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      background: #f0f8ff;
+    }
+    .wrap {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-gap: 10px;
+      justify-content: center;
+    }
+    .bubble {
+      background-color: lightblue;
+      border: none;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .bubble:disabled {
+      background-color: lightgray;
+      cursor: default;
+    }
+    #counter {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Virtual Bubble Wrap Popper</h1>
+  <p>Click the bubbles to pop them!</p>
+  <div class="wrap" id="bubbleWrap"></div>
+  <div id="counter">Bubbles Popped: 0</div>
+
+  <script>
+    const bubbleWrap = document.getElementById('bubbleWrap');
+    const counter = document.getElementById('counter');
+    let popCount = 0;
+
+    // Create audio context for generating pop sound
+    let audioContext;
+    
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playPopSound() {
+      try {
+        initAudio();
+        
+        // Create oscillator for the pop sound
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // Connect nodes
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configure the pop sound (quick frequency drop)
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+        
+        // Configure volume envelope (quick fade out)
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        // Play the sound
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+        
+      } catch (error) {
+        // Silently ignore audio errors
+        console.log('Audio not available');
+      }
+    }
+
+    function restartGame() {
+      // Clear existing bubbles
+      bubbleWrap.innerHTML = '';
+      // Reset counter
+      popCount = 0;
+      counter.textContent = `Bubbles Popped: ${popCount}`;
+      // Create new bubble grid
+      for (let i = 0; i < 48; i++) {
+        bubbleWrap.appendChild(createBubble());
+      }
+    }
+
+    function createBubble() {
+      const button = document.createElement('button');
+      button.className = 'bubble';
+      button.textContent = 'O';
+      button.addEventListener('click', () => {
+        button.textContent = '💥';
+        button.disabled = true;
+        popCount++;
+        counter.textContent = `Bubbles Popped: ${popCount}`;
+        // Play pop sound
+        playPopSound();
+        
+        // Check if all bubbles are popped (48 total)
+        if (popCount >= 48) {
+          // Wait a moment to show completion, then restart
+          setTimeout(() => {
+            restartGame();
+          }, 1500);
+        }
+      });
+      return button;
+    }
+
+    // Create 6x8 bubble grid
+    for (let i = 0; i < 48; i++) {
+      bubbleWrap.appendChild(createBubble());
+    }
+  </script>
+
+</body>
+</html>
